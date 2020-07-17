@@ -9,9 +9,13 @@ class UserManager(BaseUserManager):
     User manager
     """
 
-    def _create_user(self, username, email, password, is_staff, is_superuser, is_admin, **extra_fields):
+    def _create_user(self, username, email, password, is_staff, is_superuser, is_admin,
+                     is_agent, is_contact, **extra_fields):
         if not email:
             raise ValueError('Users must have an email address')
+        if not email:
+            raise ValueError('Users must either be an agent or a contact')
+
         now = timezone.now()
         email = self.normalize_email(email)
         user = self.model(
@@ -21,6 +25,8 @@ class UserManager(BaseUserManager):
             is_active=True,
             is_superuser=is_superuser,
             is_admin=is_admin,
+            is_agent=is_agent,
+            is_contact=is_contact,
             last_login=now,
             date_joined=now,
             **extra_fields
@@ -29,11 +35,11 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_user(self, username, email, password, **extra_fields):
-        return self._create_user(username, email, password, False, False, False, **extra_fields)
+    def create_user(self, username, email, password, is_agent, is_contact, **extra_fields):
+        return self._create_user(username, email, password, False, False, False, is_agent, is_contact, **extra_fields)
 
     def create_superuser(self, username, email, password, **extra_fields):
-        user = self._create_user(username, email, password, True, True, True, **extra_fields)
+        user = self._create_user(username, email, password, True, True, True, False, True **extra_fields)
         return user
 
 
@@ -48,6 +54,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+    is_agent = models.BooleanField(default=False)
+    # The contacts (It's a contact tracing app)
+    is_contact = models.BooleanField(default=True)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
