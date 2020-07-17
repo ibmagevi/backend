@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
@@ -8,7 +10,6 @@ class UserManager(BaseUserManager):
     """
     User manager
     """
-
     def _create_user(self, username, email, password, is_staff, is_superuser, is_admin,
                      is_agent, is_contact, **extra_fields):
         if not email:
@@ -39,7 +40,7 @@ class UserManager(BaseUserManager):
         return self._create_user(username, email, password, False, False, False, is_agent, is_contact, **extra_fields)
 
     def create_superuser(self, username, email, password, **extra_fields):
-        user = self._create_user(username, email, password, True, True, True, False, True **extra_fields)
+        user = self._create_user(username, email, password, True, True, True, False, True ** extra_fields)
         return user
 
 
@@ -62,3 +63,45 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['email']
 
     objects = UserManager()
+
+
+# TODO: Add differnt formats
+# currently only works with Kenyan numbers
+def validate_phone(value):
+    if len(value) != 13:
+        raise ValidationError(
+            _('%(value)s is not a correct phone number.'),
+            params={'value': value},
+        )
+    if value[0] != "+" or value[1] != "2" or value[2] != "5" or value[3] != "4":
+        raise ValidationError(
+            _('%(value)s is not a correct Kenyan phone number.'),
+            params={'value': value},
+        )
+
+
+class Profile(models.Model):
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    other_name = models.CharField(max_length=255, blank=True, null=True)
+    phone_number = models.CharField(max_length=13,
+                                    unique=True, validators=[validate_phone])
+    GENDER_CHOICES = [
+        ('m', 'male'),
+        ('f', 'female')]
+    gender = models.CharField(
+        max_length=50, choices=GENDER_CHOICES, null=True)
+    is_active = models.BooleanField(default=True)
+    #
+    time_added = models.DateTimeField(
+        auto_now_add=True)
+    time_last_edited = models.DateTimeField(
+        auto_now_add=True)
+    #
+    user = models.ForeignKey('accounts.User', on_delete=models.PROTECT, editable=False)
+
+    def __str__(self):
+        return f'{self.first_name} {self.last_name}'
+
+    class Meta:
+        ordering = ['first_name', 'last_name']
