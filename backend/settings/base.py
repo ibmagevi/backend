@@ -17,7 +17,7 @@ INSTALLED_APPS = [
     'knox',
     # local apps
     'accounts',
-    'tests',
+    'testing',
 ]
 
 MIDDLEWARE = [
