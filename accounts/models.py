@@ -10,6 +10,7 @@ class UserManager(BaseUserManager):
     """
     User manager
     """
+
     def _create_user(self, username, email, password, is_staff, is_superuser, is_admin,
                      is_agent, is_contact, **extra_fields):
         if not email:
@@ -80,15 +81,18 @@ def validate_phone(value):
         )
 
 
+# to be used by both the model and serializer
+GENDER_CHOICES = [
+    ('m', 'male'),
+    ('f', 'female')]
+
+
 class Profile(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     other_name = models.CharField(max_length=255, blank=True, null=True)
     phone_number = models.CharField(max_length=13,
                                     unique=True, validators=[validate_phone])
-    GENDER_CHOICES = [
-        ('m', 'male'),
-        ('f', 'female')]
     gender = models.CharField(
         max_length=50, choices=GENDER_CHOICES, null=True)
     is_active = models.BooleanField(default=True)
@@ -98,10 +102,23 @@ class Profile(models.Model):
     time_last_edited = models.DateTimeField(
         auto_now_add=True)
     #
-    user = models.ForeignKey('accounts.User', on_delete=models.PROTECT, editable=False)
+    user = models.OneToOneField('accounts.User', on_delete=models.CASCADE, editable=False)
 
     def __str__(self):
         return f'{self.first_name} {self.last_name}'
 
     class Meta:
         ordering = ['first_name', 'last_name']
+
+
+# to be used by both the model and serializer
+AGENT_TYPE = [
+    ('b', 'backend'),
+    ('f', 'frontend')]
+
+
+class Agent:
+    type = models.CharField(
+        max_length=50, choices=AGENT_TYPE, null=True)
+    available = models.BooleanField(default=True)
+    user = models.OneToOneField('accounts.User', on_delete=models.CASCADE, editable=False)
